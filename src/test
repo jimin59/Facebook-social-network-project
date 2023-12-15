@@ -1,0 +1,77 @@
+use std::collections::HashSet;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::File;
+    use std::io::Write;
+    use std::path::Path;
+
+    #[test]
+    fn test_load_facebook_data() {
+        let file_name = "test_facebook_data.txt";
+        let data = "A B\nB C\nC D\nD E\nE F\nF G\nG H\nH I\nI J\nJ K";
+        let mut file = File::create(&Path::new("src").join(file_name)).unwrap();
+        writeln!(file, "{}", data).unwrap();
+
+        let graph = load_facebook_data(file_name).unwrap();
+
+        assert_eq!(graph.len(), 10);
+        assert!(graph.contains_key("A"));
+        assert!(graph.get("A").unwrap().contains(&"B".to_string()));
+    }
+
+    #[test]
+    fn test_random_nodes() {
+        let mut graph = HashMap::new();
+        graph.insert("A".to_string(), vec!["B".to_string()]);
+        graph.insert("B".to_string(), vec!["A".to_string(), "C".to_string()]);
+        graph.insert("C".to_string(), vec!["B".to_string()]);
+
+        let num_nodes = 2;
+        let selected_nodes = random_nodes(&graph, num_nodes);
+
+        assert_eq!(selected_nodes.len(), num_nodes);
+    }
+
+    #[test]
+    fn test_six_degrees_of_separation() {
+        let mut graph = HashMap::new();
+        graph.insert("A".to_string(), vec!["B".to_string()]);
+        graph.insert("B".to_string(), vec!["A".to_string(), "C".to_string()]);
+        graph.insert("C".to_string(), vec!["B".to_string()]);
+
+        let selected_nodes: HashSet<_> = vec!["A".to_string(), "C".to_string()].into_iter().collect();
+
+        let average_distance = six_degrees_of_separation(&graph, &selected_nodes);
+
+        assert_eq!(average_distance, 2.0);
+    }
+
+    #[test]
+    fn test_average_and_std_dev_of_highest_degree() {
+        let mut graph = HashMap::new();
+        graph.insert("A".to_string(), vec!["B".to_string(), "C".to_string()]);
+        graph.insert("B".to_string(), vec!["A".to_string(), "C".to_string()]);
+        graph.insert("C".to_string(), vec!["A".to_string(), "B".to_string()]);
+
+        let (average_degree, std_dev_degree) = average_and_std_dev_of_highest_degree(&graph);
+
+        assert_eq!(average_degree, 2.0);
+        assert_eq!(std_dev_degree, 0.0);
+    }
+
+    #[test]
+    fn test_nodes_separated_by_degree() {
+        let mut graph = HashMap::new();
+        graph.insert("A".to_string(), vec!["B".to_string(), "C".to_string()]);
+        graph.insert("B".to_string(), vec!["A".to_string(), "C".to_string()]);
+        graph.insert("C".to_string(), vec!["A".to_string(), "B".to_string()]);
+
+        let separation_counts = nodes_separated_by_degree(&graph);
+
+        assert_eq!(separation_counts.get(&1).unwrap(), &3);
+        assert_eq!(separation_counts.get(&2).unwrap(), &3);
+    }
+}
+
